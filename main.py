@@ -5,7 +5,7 @@ import mediapipe as mp
 
 from utils import *
 
-
+'''기하학적 변환 행렬 계산 사용'''
 
 hand = mp.solutions.hands.Hands(static_image_mode=False,
                                 max_num_hands=1,
@@ -16,34 +16,42 @@ holistic = mp.solutions.holistic.Holistic(static_image_mode=False,
                                           min_detection_confidence=0.6,
                                           min_tracking_confidence=0.5)
 
+
+click_chk = input('클릭?: ')
+
 ptime = 0
 frame_shape = (852, 480)
 screen_w = 1677
 screen_h = 966
 
-# 좌상, 좌하, 우상, 우하
-screen_coor = np.float32([[0, 0], [0, screen_h], [screen_w, 0], [screen_w, screen_h]])
-img_coor = [[122, 108], [115, 331], [509, 85], [509, 347]]
-
-m_monitor = np.array([[0, 0, screen_w, screen_w], [0, screen_h, 0, screen_h], [0, 0, 0, 0], [0, 0, 0, 0]])
-c_monitor = np.array([[122, 115, 509, 509], [108, 331, 85, 347], [122*108, 115*331, 509*85, 509*347], [1, 1, 1, 1]])
-c_monitor_inv = np.linalg.inv(c_monitor)
-T = m_monitor.dot(c_monitor_inv)
-
-
 cap = cv2.VideoCapture('ex3.mp4')
-# cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame_shape[0])
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_shape[1])
 cap.set(cv2.CAP_PROP_FPS, 20)
 
 fourcc = cv2.VideoWriter_fourcc(*'DIVX')
-out = cv2.VideoWriter('step1.avi', fourcc, 30, frame_shape)
+# out = cv2.VideoWriter('step1.avi', fourcc, 30, frame_shape)
 
+
+# 모니터 좌표 클릭
+if click_chk == 'y':
+    success, first_image = cap.read()
+    click_pts = click_monitor(first_image)
+
+else:
+    click_pts = np.array([[122, 108], [115, 331], [509, 85], [509, 347]])
+cv2.destroyWindow('first_image')
+
+
+# 기하학적 변환 행렬 계산
+m_monitor = np.array([[0, 0, screen_w, screen_w], [0, screen_h, 0, screen_h], [0, 0, 0, 0], [0, 0, 0, 0]])
+c_monitor = np.array([click_pts[:, 0], click_pts[:, 1], click_pts[:, 0] * click_pts[:, 1], [1, 1, 1, 1]])
+c_monitor_inv = np.linalg.inv(c_monitor)
+T = m_monitor.dot(c_monitor_inv)
 
 while cap.isOpened():
     success, image = cap.read()
-    # image = cv2.flip(image, 1)
+
     h, w, _ = image.shape
 
     if not success:
@@ -51,7 +59,7 @@ while cap.isOpened():
         break
         # continue
 
-    point1, point2, point3, point4 = draw_roi(img_coor, image)
+    point1, point2, point3, point4 = draw_roi(click_pts.tolist(), image)
     screen_roi = image[point1[1]:point4[1], point1[0]:point4[0]].copy()
     roi_h, roi_w, _ = screen_roi.shape
 
@@ -82,11 +90,11 @@ while cap.isOpened():
     cv2.putText(image, f"fps: {str(int(fps))}", (10, 30), cv2.FONT_HERSHEY_TRIPLEX, 1, (255, 0, 0), 2)
 
     cv2.imshow('image', image)
-    out.write(image)
+    # out.write(image)
 
     if cv2.waitKey(1) == 27:
         break
 
-out.release()
+# out.release()
 cap.release()
 cv2.destroyAllWindows()

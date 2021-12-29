@@ -2,6 +2,42 @@ import cv2
 import numpy as np
 
 
+pts = np.zeros((4, 2), dtype=np.float32)
+pts_cnt = 0
+
+def click_event(event, x, y, flags, param):
+    global pts_cnt, pts
+
+    if event == cv2.EVENT_LBUTTONDOWN:
+        cv2.circle(param, (x, y), 4, (0, 0, 255), -1, cv2.LINE_AA)
+        pts[pts_cnt] = [x, y]
+        pts_cnt += 1
+
+def click_monitor(image):
+    global pts_cnt, pts
+
+    while pts_cnt < 4:
+        cv2.imshow('first_image', image)
+        cv2.setMouseCallback('first_image', click_event, image)
+        cv2.waitKey(1)
+
+    if pts_cnt == 4:
+        sm = pts.sum(axis=1)
+        diff = np.diff(pts, axis=1)
+
+        top_left = pts[np.argmin(sm)]
+        top_right = pts[np.argmin(diff)]
+        bottom_left = pts[np.argmax(diff)]
+        bottom_right = pts[np.argmax(sm)]
+
+        # 좌상, 좌하, 우상, 우하
+        click_pts = np.array([top_left.tolist(), bottom_left.tolist(),
+                              top_right.tolist(), bottom_right.tolist()], dtype='int')
+
+        return click_pts
+
+    return [0, 0, 0, 0]
+
 def get_hand_rect(hand_lms, frame_shape, offset, box_ratio=2):
     if hand_lms is not None:
         means = np.mean(hand_lms, axis=0)
@@ -33,10 +69,10 @@ def draw_roi(point, image):
     x2, y2 = point[1]
     x3, y3 = point[2]
     x4, y4 = point[3]
-    cv2.line(image, (x1, y1), (x2, y2), (0, 0, 255), 2)
-    cv2.line(image, (x1, y1), (x3, y3), (0, 0, 255), 2)
-    cv2.line(image, (x4, y4), (x3, y3), (0, 0, 255), 2)
-    cv2.line(image, (x4, y4), (x2, y2), (0, 0, 255), 2)
+    cv2.line(image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 2)
+    cv2.line(image, (int(x1), int(y1)), (int(x3), int(y3)), (0, 0, 255), 2)
+    cv2.line(image, (int(x4), int(y4)), (int(x3), int(y3)), (0, 0, 255), 2)
+    cv2.line(image, (int(x4), int(y4)), (int(x2), int(y2)), (0, 0, 255), 2)
 
     return point[0], point[1], point[2], point[3]
 
