@@ -37,10 +37,12 @@ fourcc = cv2.VideoWriter_fourcc(*'DIVX')
 if click_chk == 'y':
     success, first_image = cap.read()
     click_pts = click_monitor(first_image)
+    print(click_pts)
+    cv2.destroyWindow('first_image')
 
 else:
     click_pts = np.array([[122, 108], [115, 331], [509, 85], [509, 347]])
-cv2.destroyWindow('first_image')
+
 
 
 # 기하학적 변환 행렬 계산
@@ -62,6 +64,7 @@ while cap.isOpened():
     point1, point2, point3, point4 = draw_roi(click_pts.tolist(), image)
     screen_roi = image[point1[1]:point4[1], point1[0]:point4[0]].copy()
     roi_h, roi_w, _ = screen_roi.shape
+    cv2.imshow('screen', screen_roi)
 
     # 손 detect
     hand_lms, pose_lms = holistics(holistic, screen_roi)
