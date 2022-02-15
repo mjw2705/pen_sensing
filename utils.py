@@ -78,8 +78,8 @@ def draw_roi(point, image):
 
 def hands(hand, image):
     image.flags.writeable = False
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    results = hand.process(image)
+    rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = hand.process(rgb)
     image.flags.writeable = True
 
     if results.multi_hand_landmarks:
@@ -90,8 +90,8 @@ def hands(hand, image):
 
 def holistics(holistic, image):
     image.flags.writeable = False
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    results = holistic.process(image)
+    rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    results = holistic.process(rgb)
     image.flags.writeable = True
 
     pose_lms = None
