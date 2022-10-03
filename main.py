@@ -10,6 +10,24 @@ from modules.hand import HandDetector
 from modules.holistic import HolisticDetector
 from modules.pen import Pen
 
+'''pdf to img가 필요하면'''
+# from pdf2image import convert_from_path
+
+# pdf_path = './ex.pdf'
+# pdf_name = pdf_path.split('/')[-1].split('.pdf')[0]
+# images = convert_from_path(pdf_path)
+
+# # image save to jpg
+# for i, image in enumerate(images):
+#     image.save(f'./temps/{pdf_name}_{i}.jpg')
+
+# # image to pdf
+# mk_pdf = []
+# images[0] = images[0].convert('RGB')
+# for image in images[1:]:
+#     img = image.convert('RGB')
+#     mk_pdf.append(img)
+# images[0].save(f'{pdf_name}_drawing.pdf', save_all=True, append_images=mk_pdf)
 
 def main():
     rootPath = os.path.dirname(os.path.abspath(__file__))
@@ -18,7 +36,6 @@ def main():
     hands = HandDetector()
     holistic = HolisticDetector()
     pen = Pen()
-    mode = None
     P_x, P_y = 0, 0
 
     if Status.use_video == Status.use_camera:
@@ -38,7 +55,7 @@ def main():
     # delay = round(1000/fps)
 
     click_pts = click.click_monitor(cap)
-    print(click_pts.tolist())
+    print("모니터 모서리 좌표: ", click_pts.tolist())
     
     fourcc = cv2.VideoWriter_fourcc(*'DIVX')
     out = cv2.VideoWriter(f'ex.avi', fourcc, 30, (Status.monitor_w, Status.monitor_h))
@@ -49,34 +66,27 @@ def main():
             print("Ignoring empty camera frame.")
             break
         image = cv2.resize(frame, (Status.width, Status.height))
-
         dst_img = click.calc_perspective_transform(image)
         
-        # is_hand = hands.process(dst_img)
-        is_hand = holistic.process(dst_img)
-        
+        is_hand = hands.process(dst_img)
+        # is_hand = holistic.process(dst_img)
 
         if not is_hand:
-            mode = None
             P_x, P_y = 0, 0
             pass
         else:
             hand_lms = hands.get_landmarks()
-            hand_img, hand_bbox = get_pen_rect2(dst_img, hand_lms, dst_img.shape[:2], box_ratio=4)
+            hand_img, hand_bbox = get_hand_rect(dst_img, hand_lms, dst_img.shape[:2], box_ratio=4)
             mark_hand(dst_img, hand_lms[0])
             
             is_pen = pen.detect_pen(hand_lms)
             
             if is_pen:
-                # P_x, P_y = pen._locate_pen(dst_img.shape[:2], dst_img, click_pts)
-                P_x, P_y = pen.locate_pen2(dst_img, hand_img, hand_bbox[:2])
-                mode = "pen"
+                P_x, P_y = pen.locate_pen(dst_img, hand_img, hand_bbox[:2])
             else:
                 P_x, P_y = 0, 0
-                mode = "gesture"
 
-        # print(f"x:{int(P_x)}, y:{int(P_y)}")
-        cv2.putText(dst_img, f'mode:{mode}', (Status.monitor_w-310, 30), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 0, 0), 2)
+        cv2.putText(dst_img, f'mode:{pen.mode}', (Status.monitor_w-310, 30), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 0, 0), 2)
         cv2.putText(dst_img, f'x:{int(P_x)}, y:{int(P_y)}', (Status.monitor_w-310, 70), cv2.FONT_HERSHEY_COMPLEX_SMALL, 2, (0, 0, 0), 2)
         out.write(dst_img)
         dst_img = cv2.resize(dst_img, (Status.width, Status.height))
