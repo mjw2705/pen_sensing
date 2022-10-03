@@ -9,6 +9,7 @@ from modules.click import ClickManager
 from modules.hand import HandDetector
 from modules.holistic import HolisticDetector
 from modules.pen import Pen
+import threading
 
 '''pdf to img가 필요하면'''
 # from pdf2image import convert_from_path
@@ -29,6 +30,16 @@ from modules.pen import Pen
 #     mk_pdf.append(img)
 # images[0].save(f'{pdf_name}_drawing.pdf', save_all=True, append_images=mk_pdf)
 
+
+class MyThread(threading.Thread):
+    def run(self):
+        os.system('ZoomIt.exe')
+        pass
+
+thread = MyThread()
+# thread.daemon = True
+thread.start()
+
 def main():
     rootPath = os.path.dirname(os.path.abspath(__file__))
     Config.load_config('config.json')
@@ -42,7 +53,8 @@ def main():
         sys.exit("video and camera can't run concurrently")
 
     if Status.use_video:
-        abs_videoPath = rootPath + '/' + Status.video_path
+        abs_videoPath = rootPath + Status.video_path
+        print(abs_videoPath)
         cap = cv2.VideoCapture(abs_videoPath)
     elif Status.use_camera:
         cap = cv2.VideoCapture(Status.camera_id, cv2.CAP_DSHOW)
@@ -54,12 +66,13 @@ def main():
     fps = cap.get(cv2.CAP_PROP_FPS)
     # delay = round(1000/fps)
 
+    fourcc = cv2.VideoWriter_fourcc(*'DIVX')
+    file_name = (Status.video_path.split('/')[-1]).split('.')
+    out = cv2.VideoWriter(f'{Status.save_dir}/{file_name[0]}.avi', fourcc, 30, (Status.monitor_w, Status.monitor_h))
+
     click_pts = click.click_monitor(cap)
     print("모니터 모서리 좌표: ", click_pts.tolist())
     
-    fourcc = cv2.VideoWriter_fourcc(*'DIVX')
-    out = cv2.VideoWriter(f'ex.avi', fourcc, 30, (Status.monitor_w, Status.monitor_h))
-
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
@@ -91,9 +104,10 @@ def main():
         out.write(dst_img)
         dst_img = cv2.resize(dst_img, (Status.width, Status.height))
         cv2.imshow('dst', dst_img)
-        cv2.imshow('image', image)
+        # cv2.imshow('image', image)
         if cv2.waitKey(1) == 27:
                 break
+
     out.release()
     cap.release()
     cv2.destroyAllWindows()

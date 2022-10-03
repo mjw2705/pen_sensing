@@ -2,7 +2,7 @@
     "camera_id": 1,
     "use_camera": false,
     "use_video": true,
-    "video_path": "./video/WIN_20220628_19_45_00_Pro.mp4",
+    "video_path": "/video/WIN_20220628_19_45_00_Pro.mp4",
     "width": 1280,
     "height": 720, 
     "savedir": "./output", 

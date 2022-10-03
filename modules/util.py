@@ -7,10 +7,10 @@ import sys
 
 
 class Status:
-    use_video = False
-    video_path = '../video/ex1.mp4'
-    use_camera = True
     camera_id = 0
+    use_camera = True
+    use_video = False
+    video_path = './video/ex1.mp4'
     width = 640
     height = 480
     save_dir = './output'
@@ -26,10 +26,10 @@ class Config:
     def load_config(path):
         with open(path, 'r', encoding='utf-8') as file:
             config = json.load(file)
+            Status.camera_id = config["camera_id"]
+            Status.use_camera = config["use_camera"]
             Status.use_video = config["use_video"]
             Status.video_path = config["video_path"]
-            Status.use_camera = config["use_camera"]
-            Status.camera_id = config["camera_id"]
             Status.width = config["width"]
             Status.height = config["height"]
             Status.save_dir = config["savedir"]
@@ -39,6 +39,13 @@ class Config:
             Status.r_monitor_points = config["r_monitor_points"]
             Status.l_monitor_points = config["l_monitor_points"]
             Status.click_state = config["click_state"]
+
+        try:
+            if not os.path.exists(Status.save_dir):
+                os.makedirs(Status.save_dir)
+        except OSError:
+            print("Error: Failed to create the directory.")
+
 
 def draw_monitor_roi(point, image):
     # 좌상, 좌하, 우상, 우하
